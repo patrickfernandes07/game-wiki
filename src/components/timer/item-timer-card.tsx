@@ -29,6 +29,67 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
   const hasNotifiedTwoMinutesRef = useRef(false);
   const startTimeRef = useRef<number>(Date.now());
   const initialSecondsRef = useRef<number>(timer.remainingSeconds);
+  const scheduledTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
+
+  // Limpa todos os timeouts agendados
+  const clearScheduledNotifications = () => {
+    scheduledTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+    scheduledTimeoutsRef.current = [];
+  };
+
+  // Agenda notificações baseadas no tempo real do sistema
+  const scheduleNotifications = (remainingSeconds: number) => {
+    clearScheduledNotifications();
+
+    const now = Date.now();
+
+    // Agenda notificação de 2 minutos
+    if (remainingSeconds > 120 && !hasNotifiedTwoMinutesRef.current) {
+      const twoMinDelay = (remainingSeconds - 120) * 1000;
+      const timeout = setTimeout(() => {
+        if (!hasNotifiedTwoMinutesRef.current && timer.isRunning) {
+          hasNotifiedTwoMinutesRef.current = true;
+          sendBrowserNotification(
+            '⚠️ 2 Minutos Restantes',
+            `${timer.name}: Fique atento ao tempo!`
+          );
+        }
+      }, twoMinDelay);
+      scheduledTimeoutsRef.current.push(timeout);
+    }
+
+    // Agenda notificação de 1 minuto
+    if (remainingSeconds > 60 && !hasNotifiedOneMinuteRef.current) {
+      const oneMinDelay = (remainingSeconds - 60) * 1000;
+      const timeout = setTimeout(() => {
+        if (!hasNotifiedOneMinuteRef.current && timer.isRunning) {
+          hasNotifiedOneMinuteRef.current = true;
+          sendBrowserNotification(
+            '🔔 1 Minuto Restante!',
+            `${timer.name}: Prepare-se para retirar o item!`
+          );
+        }
+      }, oneMinDelay);
+      scheduledTimeoutsRef.current.push(timeout);
+    }
+
+    // Agenda notificação de expiração
+    if (remainingSeconds > 0 && !hasNotifiedRef.current) {
+      const expireDelay = remainingSeconds * 1000;
+      const timeout = setTimeout(() => {
+        if (!hasNotifiedRef.current && timer.isRunning) {
+          hasNotifiedRef.current = true;
+          onUpdate(timer.id, { isRunning: false, remainingSeconds: 0 });
+          playAlertSound();
+          sendBrowserNotification(
+            '⏰ Tempo Esgotado!',
+            `${timer.name}: Retire o item agora para vender no NPC!`
+          );
+        }
+      }, expireDelay);
+      scheduledTimeoutsRef.current.push(timeout);
+    }
+  };
 
   // Sincroniza o estado local com as props quando necessário
   useEffect(() => {
@@ -37,12 +98,22 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
       // Quando o timer está rodando, atualiza o timestamp de início
       startTimeRef.current = Date.now();
       initialSecondsRef.current = timer.remainingSeconds;
+
+      // Agenda as notificações baseadas no tempo real
+      scheduleNotifications(timer.remainingSeconds);
+    } else {
+      // Se pausou ou parou, cancela as notificações agendadas
+      clearScheduledNotifications();
     }
+
     if (timer.remainingSeconds > 0) {
       hasNotifiedRef.current = false;
       hasNotifiedOneMinuteRef.current = false;
       hasNotifiedTwoMinutesRef.current = false;
     }
+
+    // Cleanup ao desmontar
+    return () => clearScheduledNotifications();
   }, [timer.remainingSeconds, timer.isRunning, timer.isPaused]);
 
   // Effect para o countdown baseado em tempo real
@@ -84,41 +155,6 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [timer.isRunning, timer.isPaused, timer.id, onUpdate]);
-
-  // Effect separado para notificar o pai quando o tempo acabar
-  useEffect(() => {
-    if (localRemaining === 0 && timer.isRunning && !hasNotifiedRef.current) {
-      hasNotifiedRef.current = true;
-      onUpdate(timer.id, { isRunning: false, remainingSeconds: 0 });
-      playAlertSound();
-      sendBrowserNotification(
-        '⏰ Tempo Esgotado!',
-        `${timer.name}: Retire o item agora para vender no NPC!`
-      );
-    }
-  }, [localRemaining, timer.isRunning, timer.id, timer.name, onUpdate]);
-
-  // Effect para notificar quando chegar em 1 minuto
-  useEffect(() => {
-    if (localRemaining <= 60 && localRemaining > 0 && timer.isRunning && !hasNotifiedOneMinuteRef.current) {
-      hasNotifiedOneMinuteRef.current = true;
-      sendBrowserNotification(
-        '🔔 1 Minuto Restante!',
-        `${timer.name}: Prepare-se para retirar o item!`
-      );
-    }
-  }, [localRemaining, timer.isRunning, timer.name]);
-
-  // Effect para notificar quando chegar em 2 minutos
-  useEffect(() => {
-    if (localRemaining <= 120 && localRemaining > 60 && timer.isRunning && !hasNotifiedTwoMinutesRef.current) {
-      hasNotifiedTwoMinutesRef.current = true;
-      sendBrowserNotification(
-        '⚠️ 2 Minutos Restantes',
-        `${timer.name}: Fique atento ao tempo!`
-      );
-    }
-  }, [localRemaining, timer.isRunning, timer.name]);
 
   const sendBrowserNotification = (title: string, body: string) => {
     if (!('Notification' in window)) {
