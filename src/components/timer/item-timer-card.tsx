@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pause, Play, Trash2, RotateCcw } from 'lucide-react';
@@ -24,32 +24,35 @@ interface ItemTimerCardProps {
 
 export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps) {
   const [localRemaining, setLocalRemaining] = useState(timer.remainingSeconds);
+  const hasNotifiedRef = useRef(false);
 
+  // Sincroniza o estado local com as props quando necessário
   useEffect(() => {
     setLocalRemaining(timer.remainingSeconds);
+    if (timer.remainingSeconds > 0) {
+      hasNotifiedRef.current = false;
+    }
   }, [timer.remainingSeconds]);
 
+  // Effect para o countdown
   useEffect(() => {
     if (!timer.isRunning || timer.isPaused) return;
 
     const interval = setInterval(() => {
-      setLocalRemaining((prev) => {
-        const newRemaining = Math.max(0, prev - 1);
-
-        if (newRemaining === 0) {
-          onUpdate(timer.id, { isRunning: false, remainingSeconds: 0 });
-          // Toca som de alerta quando acabar
-          playAlertSound();
-        } else {
-          onUpdate(timer.id, { remainingSeconds: newRemaining });
-        }
-
-        return newRemaining;
-      });
+      setLocalRemaining((prev) => Math.max(0, prev - 1));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timer.isRunning, timer.isPaused, timer.id, onUpdate]);
+  }, [timer.isRunning, timer.isPaused]);
+
+  // Effect separado para notificar o pai quando o tempo acabar
+  useEffect(() => {
+    if (localRemaining === 0 && timer.isRunning && !hasNotifiedRef.current) {
+      hasNotifiedRef.current = true;
+      onUpdate(timer.id, { isRunning: false, remainingSeconds: 0 });
+      playAlertSound();
+    }
+  }, [localRemaining, timer.isRunning, timer.id, onUpdate]);
 
   const playAlertSound = () => {
     // Tenta tocar um som de alerta (opcional)
