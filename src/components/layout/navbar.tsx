@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Sword, Shield, Package, Sparkles, Menu } from 'lucide-react';
+import { Sword, Shield, Package, Sparkles, Clock, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -20,6 +20,7 @@ export function Navbar() {
     { href: '/equipment', icon: Shield, label: 'Equipamentos' },
     { href: '/items', icon: Package, label: 'Itens' },
     { href: '/tools/imbuement', icon: Sparkles, label: 'Calculadora' },
+    { href: '/tools/timer', icon: Clock, label: 'Cronômetro' },
   ];
 
   return (
