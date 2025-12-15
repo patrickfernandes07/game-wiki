@@ -37,9 +37,8 @@ export function NotificationBanner() {
 
   const sendTestNotification = () => {
     try {
-      console.log('Enviando notificação de teste...');
-      const notification = new Notification('🎉 Notificações Ativadas!', {
-        body: 'Você receberá alertas quando seus timers estiverem expirando.',
+      const notification = new Notification('🎉 Teste de Notificação', {
+        body: 'Se você viu esta notificação, está tudo funcionando corretamente!',
         icon: '/favicon.ico',
         badge: '/favicon.ico',
         requireInteraction: false,
@@ -47,27 +46,11 @@ export function NotificationBanner() {
       });
 
       notification.onclick = () => {
-        console.log('Notificação clicada!');
         window.focus();
         notification.close();
       };
-
-      notification.onerror = (error) => {
-        console.error('Erro na notificação:', error);
-      };
-
-      notification.onshow = () => {
-        console.log('Notificação exibida com sucesso!');
-      };
-
-      notification.onclose = () => {
-        console.log('Notificação fechada');
-      };
-
-      console.log('Notificação de teste criada com sucesso');
     } catch (error) {
-      console.error('Erro ao criar notificação de teste:', error);
-      alert('Erro ao criar notificação: ' + error);
+      alert('Erro ao criar notificação. Verifique as configurações do navegador.');
     }
   };
 

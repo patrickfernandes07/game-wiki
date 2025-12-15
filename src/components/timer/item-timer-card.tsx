@@ -85,15 +85,10 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
   }, [localRemaining, timer.isRunning, timer.name]);
 
   const sendBrowserNotification = (title: string, body: string) => {
-    // Verifica se o navegador suporta notificações
     if (!('Notification' in window)) {
-      console.log('Navegador não suporta notificações');
       return;
     }
 
-    console.log('Tentando enviar notificação:', title, 'Permissão:', Notification.permission);
-
-    // Se já tem permissão, envia a notificação
     if (Notification.permission === 'granted') {
       try {
         const notification = new Notification(title, {
@@ -101,11 +96,9 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
           icon: '/favicon.ico',
           badge: '/favicon.ico',
           tag: timer.id,
-          requireInteraction: localRemaining === 0, // Notificação persistente quando expirar
+          requireInteraction: localRemaining === 0,
         });
-        console.log('Notificação enviada com sucesso:', title);
 
-        // Foca na janela quando clicar na notificação
         notification.onclick = () => {
           window.focus();
           notification.close();
@@ -113,8 +106,6 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
       } catch (error) {
         console.error('Erro ao enviar notificação:', error);
       }
-    } else {
-      console.log('Permissão de notificação não concedida. Status:', Notification.permission);
     }
   };
 
@@ -172,12 +163,22 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
   };
 
   const handleReset = async () => {
+    // Reseta o estado local imediatamente
+    const resetSeconds = timer.durationMinutes * 60;
+    setLocalRemaining(resetSeconds);
+
+    // Reseta os refs de notificação
+    hasNotifiedRef.current = false;
+    hasNotifiedOneMinuteRef.current = false;
+    hasNotifiedTwoMinutesRef.current = false;
+
     // Reseta o timer e inicia automaticamente
     onUpdate(timer.id, {
-      remainingSeconds: timer.durationMinutes * 60,
+      remainingSeconds: resetSeconds,
       isRunning: true,
       isPaused: false,
     });
+
     // Pede permissão para notificações ao reiniciar
     await requestNotificationPermission();
   };
