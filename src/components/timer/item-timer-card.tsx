@@ -27,27 +27,63 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
   const hasNotifiedRef = useRef(false);
   const hasNotifiedOneMinuteRef = useRef(false);
   const hasNotifiedTwoMinutesRef = useRef(false);
+  const startTimeRef = useRef<number>(Date.now());
+  const initialSecondsRef = useRef<number>(timer.remainingSeconds);
 
   // Sincroniza o estado local com as props quando necessário
   useEffect(() => {
     setLocalRemaining(timer.remainingSeconds);
+    if (timer.isRunning && !timer.isPaused) {
+      // Quando o timer está rodando, atualiza o timestamp de início
+      startTimeRef.current = Date.now();
+      initialSecondsRef.current = timer.remainingSeconds;
+    }
     if (timer.remainingSeconds > 0) {
       hasNotifiedRef.current = false;
       hasNotifiedOneMinuteRef.current = false;
       hasNotifiedTwoMinutesRef.current = false;
     }
-  }, [timer.remainingSeconds]);
+  }, [timer.remainingSeconds, timer.isRunning, timer.isPaused]);
 
-  // Effect para o countdown
+  // Effect para o countdown baseado em tempo real
   useEffect(() => {
     if (!timer.isRunning || timer.isPaused) return;
 
-    const interval = setInterval(() => {
-      setLocalRemaining((prev) => Math.max(0, prev - 1));
-    }, 1000);
+    // Atualiza o timestamp de início quando o timer começa ou retoma
+    startTimeRef.current = Date.now();
+    initialSecondsRef.current = localRemaining;
 
-    return () => clearInterval(interval);
-  }, [timer.isRunning, timer.isPaused]);
+    const updateTimer = () => {
+      // Calcula quanto tempo realmente passou desde o início
+      const now = Date.now();
+      const elapsedSeconds = Math.floor((now - startTimeRef.current) / 1000);
+      const newRemaining = Math.max(0, initialSecondsRef.current - elapsedSeconds);
+
+      setLocalRemaining(newRemaining);
+
+      // Atualiza o componente pai periodicamente (a cada 5 segundos ou quando chegar a 0)
+      if (newRemaining === 0 || elapsedSeconds % 5 === 0) {
+        onUpdate(timer.id, { remainingSeconds: newRemaining });
+      }
+    };
+
+    const interval = setInterval(updateTimer, 1000);
+
+    // Listener para quando a aba volta a ter foco
+    const handleVisibilityChange = () => {
+      if (!document.hidden && timer.isRunning && !timer.isPaused) {
+        // Atualiza imediatamente quando a aba volta a ficar visível
+        updateTimer();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [timer.isRunning, timer.isPaused, timer.id, onUpdate]);
 
   // Effect separado para notificar o pai quando o tempo acabar
   useEffect(() => {
@@ -64,7 +100,7 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
 
   // Effect para notificar quando chegar em 1 minuto
   useEffect(() => {
-    if (localRemaining === 60 && timer.isRunning && !hasNotifiedOneMinuteRef.current) {
+    if (localRemaining <= 60 && localRemaining > 0 && timer.isRunning && !hasNotifiedOneMinuteRef.current) {
       hasNotifiedOneMinuteRef.current = true;
       sendBrowserNotification(
         '🔔 1 Minuto Restante!',
@@ -75,7 +111,7 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
 
   // Effect para notificar quando chegar em 2 minutos
   useEffect(() => {
-    if (localRemaining === 120 && timer.isRunning && !hasNotifiedTwoMinutesRef.current) {
+    if (localRemaining <= 120 && localRemaining > 60 && timer.isRunning && !hasNotifiedTwoMinutesRef.current) {
       hasNotifiedTwoMinutesRef.current = true;
       sendBrowserNotification(
         '⚠️ 2 Minutos Restantes',
