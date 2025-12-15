@@ -87,18 +87,34 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
   const sendBrowserNotification = (title: string, body: string) => {
     // Verifica se o navegador suporta notificações
     if (!('Notification' in window)) {
+      console.log('Navegador não suporta notificações');
       return;
     }
 
+    console.log('Tentando enviar notificação:', title, 'Permissão:', Notification.permission);
+
     // Se já tem permissão, envia a notificação
     if (Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
-        tag: timer.id,
-        requireInteraction: localRemaining === 0, // Notificação persistente quando expirar
-      });
+      try {
+        const notification = new Notification(title, {
+          body,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+          tag: timer.id,
+          requireInteraction: localRemaining === 0, // Notificação persistente quando expirar
+        });
+        console.log('Notificação enviada com sucesso:', title);
+
+        // Foca na janela quando clicar na notificação
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      } catch (error) {
+        console.error('Erro ao enviar notificação:', error);
+      }
+    } else {
+      console.log('Permissão de notificação não concedida. Status:', Notification.permission);
     }
   };
 
@@ -155,12 +171,15 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
     onUpdate(timer.id, { isPaused: !timer.isPaused });
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    // Reseta o timer e inicia automaticamente
     onUpdate(timer.id, {
       remainingSeconds: timer.durationMinutes * 60,
-      isRunning: false,
+      isRunning: true,
       isPaused: false,
     });
+    // Pede permissão para notificações ao reiniciar
+    await requestNotificationPermission();
   };
 
   const handleStart = async () => {
