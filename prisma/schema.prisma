@@ -1,0 +1,351 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(ADMIN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+}
+
+model Monster {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  hp           Int
+  experience   Int
+  speed        Int
+  armor        Int
+  shielding    Int?
+  summonable   Boolean  @default(false)
+  convinceable Boolean  @default(false)
+  illusionable Boolean  @default(false)
+  pushable     Boolean  @default(false)
+  paralysable  Boolean  @default(false)
+  imageUrl     String?
+  description  String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  loot                 Loot[]
+  equipmentLoot        EquipmentLoot[]
+  abilities            MonsterAbility[]
+  elementalResistances ElementalResistance[]
+
+  @@index([name])
+}
+
+model MonsterAbility {
+  id        String      @id @default(cuid())
+  monsterId String
+  name      String
+  minDamage Int?
+  maxDamage Int?
+  type      DamageType?
+
+  monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+
+  @@index([monsterId])
+}
+
+enum DamageType {
+  PHYSICAL
+  FIRE
+  ICE
+  ENERGY
+  EARTH
+  HOLY
+  DEATH
+}
+
+model ElementalResistance {
+  id        String     @id @default(cuid())
+  monsterId String
+  element   DamageType
+  percent   Int // 0 = imune, 100 = normal, >100 = fraqueza, <100 = resistência
+
+  monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+
+  @@unique([monsterId, element])
+  @@index([monsterId])
+}
+
+model Equipment {
+  id             String        @id @default(cuid())
+  name           String        @unique
+  type           EquipmentType
+  slot           EquipmentSlot
+  level          Int           @default(0)
+  vocation       String?
+  armor          Int?
+  attack         Int?
+  defense        Int?
+  range          Int?
+  weight         Float
+  buyPrice       Int? // Preço base de referência para compra de NPCs
+  sellPrice      Int? // Preço base de referência para venda a NPCs
+  isBis          Boolean       @default(false) // Best in Slot - melhor equipamento do slot
+  isDeliveryTask Boolean       @default(false) // Pode ser entregue em Delivery Tasks
+  isQuestReward  Boolean       @default(false) // Obtido através de quest
+  imageUrl       String?
+  description    String?       @db.Text
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  attributes    EquipmentAttribute[]
+  imbuements    EquipmentImbuement[]
+  equipmentLoot EquipmentLoot[]
+  npcTrades     NPCEquipmentTrade[]
+
+  @@index([name])
+  @@index([type])
+  @@index([isBis])
+  @@index([isQuestReward])
+}
+
+enum EquipmentType {
+  WEAPON
+  ARMOR
+  SHIELD
+  HELMET
+  LEGS
+  BOOTS
+  AMULET
+  RING
+}
+
+enum EquipmentSlot {
+  HEAD
+  ARMOR_SLOT
+  LEGS_SLOT
+  FEET
+  NECKLACE
+  RING_SLOT
+  LEFT_HAND
+  RIGHT_HAND
+  TWO_HANDED
+}
+
+model EquipmentAttribute {
+  id          String @id @default(cuid())
+  equipmentId String
+  attribute   String
+  value       String
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId])
+}
+
+model EquipmentImbuement {
+  id          String @id @default(cuid())
+  equipmentId String
+  slots       Int    @default(0)
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId])
+}
+
+model Item {
+  id             String       @id @default(cuid())
+  name           String       @unique
+  category       ItemCategory
+  stackable      Boolean      @default(false)
+  weight         Float
+  buyPrice       Int? // Preço base de referência para compra de NPCs
+  sellPrice      Int? // Preço base de referência para venda a NPCs
+  isDeliveryTask Boolean      @default(false) // Pode ser entregue em Delivery Tasks
+  isQuestReward  Boolean      @default(false) // Obtido através de quest
+  imageUrl       String?
+  description    String?      @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  loot      Loot[]
+  npcTrades NPCItemTrade[]
+
+  @@index([name])
+  @@index([category])
+  @@index([isQuestReward])
+}
+
+enum ItemCategory {
+  RUNE
+  POTION
+  FOOD
+  TOOL
+  VALUABLE
+  CONTAINER
+  OTHER
+}
+
+model Loot {
+  id        String @id @default(cuid())
+  monsterId String
+  itemId    String
+  chance    Float
+
+  monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+  item    Item    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([monsterId, itemId])
+  @@index([monsterId])
+  @@index([itemId])
+}
+
+model EquipmentLoot {
+  id          String @id @default(cuid())
+  monsterId   String
+  equipmentId String
+  chance      Float
+
+  monster   Monster   @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([monsterId, equipmentId])
+  @@index([monsterId])
+  @@index([equipmentId])
+}
+
+model NPC {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  title       String? // Ex: "Blacksmith", "Weapon Shopkeeper"
+  occupation  NPCOccupation
+  race        NPCRace?
+  city        String? // Cidade onde está localizado
+  location    String?       @db.Text // Descrição detalhada da localização
+  imageUrl    String?
+  description String?       @db.Text
+  notes       String?       @db.Text // Informações adicionais, quests, etc
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  itemTrades      NPCItemTrade[]
+  equipmentTrades NPCEquipmentTrade[]
+
+  @@index([name])
+  @@index([city])
+  @@index([occupation])
+}
+
+enum NPCOccupation {
+  WEAPON_SHOPKEEPER
+  ARMOR_SHOPKEEPER
+  EQUIPMENT_SHOPKEEPER
+  FOOD_SHOPKEEPER
+  FURNITURE_SHOPKEEPER
+  TOOL_SHOPKEEPER
+  MAGIC_SHOPKEEPER
+  POTION_SHOPKEEPER
+  RUNE_SHOPKEEPER
+  BANKER
+  BLESSER
+  GUARD
+  FERRYMAN
+  QUEST_NPC
+  MERCHANT
+  TRADER
+  BLACKSMITH
+  DRUID_GUILD_LEADER
+  KNIGHT_GUILD_LEADER
+  PALADIN_GUILD_LEADER
+  SORCERER_GUILD_LEADER
+  COMBAT_INSTRUCTOR
+  POSTMAN
+  EXPLORER
+  COLLECTOR
+  FISHER
+  COOK
+  INNKEEPER
+  LIBRARIAN
+  GUIDE
+  OTHER
+}
+
+enum NPCRace {
+  HUMAN
+  DWARF
+  ELF
+  GOBLIN
+  GNOME
+  LIZARD
+  DJINN
+  DEMON
+  DRAGON
+  CYCLOPS
+  MINOTAUR
+  ORC
+  TROLL
+  UNDEAD
+  BONELORD
+  CHAKOYA
+  CORYM
+  APE
+  DOG
+  ELEMENTAL
+  FAE
+  MACHINE
+  MERMAID
+  OGRE
+  ROCKBOY
+  YALAHARI
+  OTHER
+}
+
+model NPCItemTrade {
+  id        String @id @default(cuid())
+  npcId     String
+  itemId    String
+  buyPrice  Int? // Preço que o NPC PAGA quando compra do jogador
+  sellPrice Int? // Preço que o NPC COBRA quando vende ao jogador
+  currency  String @default("gold") // Para casos especiais (Tibia Coins, etc)
+
+  npc  NPC  @relation(fields: [npcId], references: [id], onDelete: Cascade)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([npcId, itemId])
+  @@index([npcId])
+  @@index([itemId])
+}
+
+model NPCEquipmentTrade {
+  id          String @id @default(cuid())
+  npcId       String
+  equipmentId String
+  buyPrice    Int? // Preço que o NPC PAGA quando compra do jogador
+  sellPrice   Int? // Preço que o NPC COBRA quando vende ao jogador
+  currency    String @default("gold") // Para casos especiais (Tibia Coins, etc)
+
+  npc       NPC       @relation(fields: [npcId], references: [id], onDelete: Cascade)
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([npcId, equipmentId])
+  @@index([npcId])
+  @@index([equipmentId])
+}
+
+model City {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  premium     Boolean  @default(false) // Se requer Premium Account
+  continent   String? // Ex: "Mainland", "Zao", "Shattered Isles"
+  description String?  @db.Text
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+}
