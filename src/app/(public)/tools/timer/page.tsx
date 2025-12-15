@@ -198,28 +198,68 @@ export default function TimerPage() {
       )}
 
       {/* Info box */}
-      <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-          <span>💡</span>
-          Dicas de uso
-        </h3>
-        <ul className="space-y-2 text-sm text-muted-foreground">
-          <li>
-            • <strong>Collar of Red Plasma:</strong> Retire nos últimos 60 segundos para vender no NPC
-          </li>
-          <li>
-            • <strong>Notificações no PC:</strong> Ative as notificações para receber alertas mesmo com a aba em segundo plano
-          </li>
-          <li>
-            • <strong>Alertas automáticos:</strong> Avisos visuais e notificações aos 2 minutos, 1 minuto e quando expirar
-          </li>
-          <li>
-            • <strong>Persistência:</strong> Seus timers são salvos automaticamente no navegador
-          </li>
-          <li>
-            • <strong>Múltiplos timers:</strong> Gerencie vários itens simultaneamente
-          </li>
-        </ul>
+      <div className="mt-8 space-y-4">
+        <div className="p-6 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+            <span>💡</span>
+            Dicas de uso
+          </h3>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            <li>
+              • <strong>Collar of Red Plasma:</strong> Retire nos últimos 60 segundos para vender no NPC
+            </li>
+            <li>
+              • <strong>Notificações no PC:</strong> Ative as notificações para receber alertas mesmo com a aba em segundo plano
+            </li>
+            <li>
+              • <strong>Alertas automáticos:</strong> Avisos visuais e notificações aos 2 minutos, 1 minuto e quando expirar
+            </li>
+            <li>
+              • <strong>Persistência:</strong> Seus timers são salvos automaticamente no navegador
+            </li>
+            <li>
+              • <strong>Múltiplos timers:</strong> Gerencie vários itens simultaneamente
+            </li>
+          </ul>
+        </div>
+
+        <div className="p-6 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-yellow-900 dark:text-yellow-100">
+            <span>🔔</span>
+            Notificações não aparecem? Verifique as configurações do sistema
+          </h3>
+          <div className="space-y-3 text-sm">
+            <div>
+              <p className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">Windows 10/11:</p>
+              <ol className="list-decimal list-inside space-y-1 text-yellow-800 dark:text-yellow-200 ml-2">
+                <li>Clique no botão "Testar Notificação" acima</li>
+                <li>Se não aparecer, vá em Configurações → Sistema → Notificações</li>
+                <li>Certifique-se que notificações estão ativadas</li>
+                <li>Procure pelo seu navegador (Chrome/Edge/Firefox) e ative as notificações</li>
+                <li>Em "Modo Foco" (ou "Assistente de Concentração"), desative ou configure exceções</li>
+              </ol>
+            </div>
+            <div>
+              <p className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">macOS:</p>
+              <ol className="list-decimal list-inside space-y-1 text-yellow-800 dark:text-yellow-200 ml-2">
+                <li>Vá em Preferências do Sistema → Notificações</li>
+                <li>Procure pelo seu navegador na lista</li>
+                <li>Ative "Permitir notificações"</li>
+                <li>Escolha o estilo de alerta (Banner ou Alerta)</li>
+                <li>Desative "Não Perturbe" se estiver ativo</li>
+              </ol>
+            </div>
+            <div>
+              <p className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">Chrome/Edge:</p>
+              <ol className="list-decimal list-inside space-y-1 text-yellow-800 dark:text-yellow-200 ml-2">
+                <li>Clique no cadeado 🔒 ao lado da URL</li>
+                <li>Vá em "Configurações do site"</li>
+                <li>Em "Notificações", selecione "Permitir"</li>
+                <li>Abra o Console (F12) e clique em "Testar Notificação" para ver os logs</li>
+              </ol>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
