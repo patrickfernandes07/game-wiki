@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ItemTimerCard, type TimerData } from '@/components/timer/item-timer-card';
 import { AddTimerDialog } from '@/components/timer/add-timer-dialog';
+import { NotificationBanner } from '@/components/timer/notification-banner';
 import { Button } from '@/components/ui/button';
 import { Trash2, Clock } from 'lucide-react';
 import {
@@ -125,6 +126,9 @@ export default function TimerPage() {
         </p>
       </div>
 
+      {/* Notification Banner */}
+      <NotificationBanner />
+
       {/* Stats */}
       {timers.length > 0 && (
         <div className="mb-6 p-4 bg-muted rounded-lg flex items-center justify-between">
@@ -204,7 +208,10 @@ export default function TimerPage() {
             • <strong>Collar of Red Plasma:</strong> Retire nos últimos 60 segundos para vender no NPC
           </li>
           <li>
-            • <strong>Alertas:</strong> Você receberá avisos visuais quando faltar 2 minutos e 1 minuto
+            • <strong>Notificações no PC:</strong> Ative as notificações para receber alertas mesmo com a aba em segundo plano
+          </li>
+          <li>
+            • <strong>Alertas automáticos:</strong> Avisos visuais e notificações aos 2 minutos, 1 minuto e quando expirar
           </li>
           <li>
             • <strong>Persistência:</strong> Seus timers são salvos automaticamente no navegador

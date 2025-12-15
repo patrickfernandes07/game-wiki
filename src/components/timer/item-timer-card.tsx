@@ -25,12 +25,16 @@ interface ItemTimerCardProps {
 export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps) {
   const [localRemaining, setLocalRemaining] = useState(timer.remainingSeconds);
   const hasNotifiedRef = useRef(false);
+  const hasNotifiedOneMinuteRef = useRef(false);
+  const hasNotifiedTwoMinutesRef = useRef(false);
 
   // Sincroniza o estado local com as props quando necessário
   useEffect(() => {
     setLocalRemaining(timer.remainingSeconds);
     if (timer.remainingSeconds > 0) {
       hasNotifiedRef.current = false;
+      hasNotifiedOneMinuteRef.current = false;
+      hasNotifiedTwoMinutesRef.current = false;
     }
   }, [timer.remainingSeconds]);
 
@@ -51,8 +55,62 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
       hasNotifiedRef.current = true;
       onUpdate(timer.id, { isRunning: false, remainingSeconds: 0 });
       playAlertSound();
+      sendBrowserNotification(
+        '⏰ Tempo Esgotado!',
+        `${timer.name}: Retire o item agora para vender no NPC!`
+      );
     }
-  }, [localRemaining, timer.isRunning, timer.id, onUpdate]);
+  }, [localRemaining, timer.isRunning, timer.id, timer.name, onUpdate]);
+
+  // Effect para notificar quando chegar em 1 minuto
+  useEffect(() => {
+    if (localRemaining === 60 && timer.isRunning && !hasNotifiedOneMinuteRef.current) {
+      hasNotifiedOneMinuteRef.current = true;
+      sendBrowserNotification(
+        '🔔 1 Minuto Restante!',
+        `${timer.name}: Prepare-se para retirar o item!`
+      );
+    }
+  }, [localRemaining, timer.isRunning, timer.name]);
+
+  // Effect para notificar quando chegar em 2 minutos
+  useEffect(() => {
+    if (localRemaining === 120 && timer.isRunning && !hasNotifiedTwoMinutesRef.current) {
+      hasNotifiedTwoMinutesRef.current = true;
+      sendBrowserNotification(
+        '⚠️ 2 Minutos Restantes',
+        `${timer.name}: Fique atento ao tempo!`
+      );
+    }
+  }, [localRemaining, timer.isRunning, timer.name]);
+
+  const sendBrowserNotification = (title: string, body: string) => {
+    // Verifica se o navegador suporta notificações
+    if (!('Notification' in window)) {
+      return;
+    }
+
+    // Se já tem permissão, envia a notificação
+    if (Notification.permission === 'granted') {
+      new Notification(title, {
+        body,
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        tag: timer.id,
+        requireInteraction: localRemaining === 0, // Notificação persistente quando expirar
+      });
+    }
+  };
+
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      return;
+    }
+
+    if (Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+  };
 
   const playAlertSound = () => {
     // Tenta tocar um som de alerta (opcional)
@@ -105,7 +163,9 @@ export function ItemTimerCard({ timer, onUpdate, onDelete }: ItemTimerCardProps)
     });
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
+    // Pede permissão para notificações ao iniciar o timer
+    await requestNotificationPermission();
     onUpdate(timer.id, { isRunning: true, isPaused: false });
   };
 
